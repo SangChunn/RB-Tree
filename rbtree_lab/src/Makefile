@@ -1,8 +1,13 @@
-.PHONY: clean
+.PHONY: all clean
 
-CFLAGS=-Wall -g -DSENTINEL
+CC ?= cc
+CFLAGS   += -Wall -g
+CPPFLAGS += -I .
 
-driver: driver.o rbtree.o
+all: rbtree.o
+
+rbtree.o: rbtree.c rbtree.h
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
 
 clean:
-	rm -f driver *.o
+	rm -f *.o
