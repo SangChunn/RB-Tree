@@ -1,15 +1,25 @@
-.PHONY: test
+# test/Makefile
+.PHONY: test clean
 
-CFLAGS=-I ../src -Wall -g #-DSENTINEL
+# 컴파일 플래그
+CPPFLAGS += -DSENTINEL -I ../src -I ../lib
+CFLAGS   += -Wall -g
 
-test: test-rbtree
-	./test-rbtree
-	valgrind ./test-rbtree
+# 소스 목록
+SRCS := test_unity_rbtree.c ../src/rbtree.c ../lib/unity.c
+OBJS := $(SRCS:.c=.o)
+TARGET := test_unity_rbtree
 
-test-rbtree: test-rbtree.o ../src/rbtree.o
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(OBJS) -o $(TARGET)
 
-../src/rbtree.o:
-	$(MAKE) -C ../src rbtree.o
+# ✅ 테스트 실행 + 메모리 누수 검사
+test: $(TARGET)
+	@echo "🚀 Running Unity tests..."
+	./$(TARGET)
+	@echo ""
+	@echo "🔍 Running Valgrind memory leak check..."
+	valgrind --leak-check=full --show-leak-kinds=all ./$(TARGET)
 
 clean:
-	rm -f test-rbtree *.o
+	rm -f $(TARGET) $(OBJS)
