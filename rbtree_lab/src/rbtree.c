@@ -4,6 +4,7 @@
 static void left_rotate(rbtree *t, node_t *x);
 static void right_rotate(rbtree *t, node_t *x);
 static void insert_fixup(rbtree *t, node_t *z);
+static void erase_fixup(rbtree *t, node_t *x);
 
 rbtree *new_rbtree(void) {
   rbtree *p = (rbtree *)calloc(1, sizeof(rbtree));
@@ -169,7 +170,8 @@ static void rbtree_transplant(rbtree *t, node_t *u, node_t *v){
     u -> parent -> left =  v;
   else  
     u -> parent -> right = v;
-  v -> parent = u -> parent;
+  
+  if (v != t->nil) v -> parent = u -> parent;
 }
 
 static node_t *tree_minimum(const rbtree *t, node_t *x){
@@ -196,11 +198,96 @@ int rbtree_erase(rbtree *t, node_t *z) {
     y = tree_minimum(t, z->right);
     y_basic_color = y->color;
     x = y->right;
+
+    if (y->parent == z){
+      if (x != t->nil) x->parent = y;
+    }else{
+      rbtree_transplant(t, y, y->right);
+      y->right = z->right;
+      y->right->parent = y;
+    }
+
+    rbtree_transplant(t, z, y);
+    y->left = z->left;
+    y->left->parent = y;
+    y->color = z->color;
   }
+  if (y_basic_color == RBTREE_BLACK){
+    erase_fixup(t, x);
+  }
+  free(z);
   return 0;
+}
+
+static void erase_fixup(rbtree *t, node_t *x){
+  while (x != t->root && x->color == RBTREE_BLACK)
+  {
+    if (x == x->parent->left){
+      node_t *w = x->parent->right;
+      if (w->color == RBTREE_RED){
+        w->color = RBTREE_BLACK;
+        x->parent->color = RBTREE_RED;
+        left_rotate(t, x->parent);
+        w = x->parent->right;
+      }
+      if (w->left->color == RBTREE_BLACK && w->right->color == RBTREE_BLACK){
+        w->color = RBTREE_RED;
+        x = x->parent;
+      }else{
+        if (w->right->color == RBTREE_BLACK){
+          w->left->color = RBTREE_BLACK;
+          w->color = RBTREE_RED;
+          right_rotate(t, w);
+          w = x->parent->right;
+        }
+        w->color = x->parent->color;
+        x->parent->color = RBTREE_BLACK;
+        w->right->color = RBTREE_BLACK;
+        left_rotate(t, x->parent);
+        x = t->root;
+      }
+    }
+    else{
+      node_t *w = x->parent->left;
+      if (w->color == RBTREE_RED){
+        w->color = RBTREE_BLACK;
+        x->parent->color = RBTREE_RED;
+        right_rotate(t, x->parent);
+        w = x->parent->left;
+      }
+      if (w->right->color == RBTREE_BLACK &&           
+          w->left->color == RBTREE_BLACK) {
+        w->color = RBTREE_RED;
+        x = x->parent;
+      } else {
+        if (w->left->color == RBTREE_BLACK) {           
+          w->right->color = RBTREE_BLACK;
+          w->color = RBTREE_RED;
+          left_rotate(t, w);
+          w = x->parent->left;
+        }
+        w->color = x->parent->color;                    
+        x->parent->color = RBTREE_BLACK;
+        w->left->color = RBTREE_BLACK;
+        right_rotate(t, x->parent);
+        x = t->root;
+      }
+    }
+  }
+  x->color = RBTREE_BLACK;
+}
+
+static void inorder_fill (const rbtree *t, node_t *cur, key_t *arr, size_t n, size_t *idx){
+  if (cur == t->nil || *idx >= n) return;
+
+  inorder_fill(t, cur->left, arr, n , idx);
+  arr[(*idx)++] = cur->key;
+  inorder_fill(t, cur->right, arr, n, idx);
 }
 
 int rbtree_to_array(const rbtree *t, key_t *arr, const size_t n) {
   // TODO: implement to_array
+  size_t idx = 0;
+  inorder_fill(t, t->root, arr, n, &idx);
   return 0;
 }
