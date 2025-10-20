@@ -162,8 +162,41 @@ node_t *rbtree_max(const rbtree *t) {
   return cur;
 }
 
-int rbtree_erase(rbtree *t, node_t *p) {
+static void rbtree_transplant(rbtree *t, node_t *u, node_t *v){
+  if (u -> parent == t -> nil)
+    t -> root = v;
+  else if(u == u -> parent -> left)
+    u -> parent -> left =  v;
+  else  
+    u -> parent -> right = v;
+  v -> parent = u -> parent;
+}
+
+static node_t *tree_minimum(const rbtree *t, node_t *x){
+  while (x -> left != t -> nil)
+    x = x -> left;
+  return x;
+}
+
+int rbtree_erase(rbtree *t, node_t *z) {
   // TODO: implement erase
+  node_t *y = z;
+  color_t y_basic_color = y->color;
+  node_t *x;
+
+  if (z->left == t->nil){
+    x = z->right;
+    rbtree_transplant(t, z, z->right);
+  }
+  else if (z->right == t->nil){
+    x = z->left;
+    rbtree_transplant(t, z, z->left);
+  }
+  else{
+    y = tree_minimum(t, z->right);
+    y_basic_color = y->color;
+    x = y->right;
+  }
   return 0;
 }
 
